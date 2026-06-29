@@ -483,9 +483,19 @@ def mode_csv():
     st.caption('Incarci un CSV (timestamp, acc_x, acc_y, acc_z, label) si vezi '
                'predictiile pe fiecare fereastra de 512 sample-uri.')
 
-    artifacts = load_multiclass()
+    tip_analiza = st.radio(
+        'Model folosit pentru analiza',
+        ['6 clase', 'Normal/Defect'],
+        horizontal=True,
+        help='Pentru date colectate pe Ender, varianta Normal/Defect este mai potrivita.'
+    )
+
+    artifacts = load_multiclass() if tip_analiza == '6 clase' else load_binary()
     if artifacts is None:
-        st.error('Lipseste model_s1.joblib / scaler_s1.joblib / label_encoder.joblib din "export/".')
+        if tip_analiza == '6 clase':
+            st.error('Lipseste model_s1.joblib / scaler_s1.joblib / label_encoder.joblib din "export/".')
+        else:
+            st.error('Lipseste model_s1_bin.joblib / scaler_s1_bin.joblib / label_encoder_bin.joblib din "export/".')
         return
     model, scaler, encoder = artifacts
 
@@ -541,9 +551,24 @@ def mode_csv():
     st.plotly_chart(fig, use_container_width=True)
 
     if label_true is not None:
-        match = (preds == label_true).mean() * 100
-        st.info(f'Eticheta din CSV: **{label_true}**. '
-                f'Match cu predictia: **{match:.1f}%** din ferestre.')
+        label_eval = label_true
+        if tip_analiza == 'Normal/Defect':
+            label_lower = str(label_true).lower()
+            clase_defect = {'arm_failure', 'bowden', 'plastic', 'retraction', 'unstick', 'defect'}
+            if 'proper' in label_lower or label_lower == 'normal':
+                label_eval = 'normal'
+            elif label_lower in clase_defect:
+                label_eval = 'defect'
+            else:
+                label_eval = None
+
+        if label_eval is not None and label_eval in set(encoder.classes_):
+            match = (preds == label_eval).mean() * 100
+            st.info(f'Eticheta din CSV: **{label_true}** (evaluata ca **{label_eval}**). '
+                    f'Match cu predictia: **{match:.1f}%** din ferestre.')
+        else:
+            st.info(f'Eticheta din CSV: **{label_true}**. Nu se calculeaza match automat, '
+                    'deoarece eticheta nu corespunde claselor modelului selectat.')
 
     st.subheader('Predictii pe primele ferestre')
     tabel = pd.DataFrame({
