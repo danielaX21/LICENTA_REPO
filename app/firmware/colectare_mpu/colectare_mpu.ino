@@ -1,39 +1,20 @@
-/*
- * colectare_mpu.ino
- * -----------------
- * Firmware pentru ESP32 + MPU-6050 (un singur senzor).
- * Citeste accelerometrul triaxial la ~1000 Hz si trimite valorile prin
- * serial (115200 baud) in format CSV: acc_x,acc_y,acc_z
- *
- * Pinout:
- *   VCC senzor  -> 3V3 ESP32
- *   GND senzor  -> GND ESP32
- *   SDA senzor  -> D21 ESP32 (default I2C SDA)
- *   SCL senzor  -> D22 ESP32 (default I2C SCL)
- *
- * Configurare in Arduino IDE:
- *   - Board: DOIT ESP32 DEVKIT V1
- *   - Upload Speed: 921600
- *   - Library: Adafruit MPU6050 (instaleaza prin Library Manager)
- */
-
 #include <Wire.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 
 Adafruit_MPU6050 mpu;
-const int SAMPLE_INTERVAL_US = 1000; // 1000 us = 1 kHz
+const int SAMPLE_INTERVAL_US = 1000;
 
 void setup() {
   Serial.begin(115200);
   while (!Serial) delay(10);
 
   Wire.begin(21, 22);
-  Wire.setClock(400000);  // I2C fast mode pentru sampling rate ridicat
+  Wire.setClock(400000);
 
   if (!mpu.begin(0x68)) {
-    Serial.println("EROARE: MPU nu raspunde la 0x68!");
-    Serial.println("Verifica firele VCC/GND/SDA/SCL si daca senzorul e bun.");
+    Serial.println("EROARE: MPU nu raspunde la 0x68");
+    Serial.println("Verifica firele VCC/GND/SDA/SCL.");
     while (1) delay(10);
   }
 
